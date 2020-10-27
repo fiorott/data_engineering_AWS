@@ -1,0 +1,57 @@
+Description: Creates group, roles and politcys for the data engineer
+
+Resources:
+
+  IamRoleDataEngineer:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:
+              - sts:AssumeRole
+      Description: role to be used for data engineers
+      ManagedPolicyArns:
+        - !Ref IamPolicyDataEngineer
+      RoleName: role-production-data-engineer
+
+  IamPolicyDataEngineer:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Access Policy for data engineers
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetBucketLocation
+              - s3:ListAllMyBuckets
+              - s3:ListBucket
+              - s3:GetObject
+            Resource:
+              - arn:aws:s3:::*
+
+  IamGroupDataEngineer:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: iam-group-data-engineer
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+        - !Ref IamPolicyGroupDataEngineer
+
+  IamPolicyGroupDataEngineer:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Access Policies for the data engineers group
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource:
+              - !GetAtt IamRoleDataEngineer.Arn
+
