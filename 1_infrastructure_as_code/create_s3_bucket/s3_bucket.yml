@@ -5,7 +5,7 @@ Description: Creates a S3 Bucket
 
 Resources:
 
-  S3Bucket:
+  S3BucketPRODUCTION: #Each bucket must have a different name defined here at the resource level
     Type: AWS::S3::Bucket
     Properties:
       BucketEncryption: # bucket cryptography is a optional setting, but always a good practise.
@@ -18,3 +18,15 @@ Resources:
 
       # For aditional bucket properties, check the documentation below:
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
+  S3BucketDEV:
+    Type: AWS::S3::Bucket #same settings as for the first bucket above, only creating a second bucket for the dev environment.
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: fiorott-bucket-2020-11-dev # "-dev" added at the end to create a separate bucket
+      VersioningConfiguration:
+        Status: Enabled
+
+
