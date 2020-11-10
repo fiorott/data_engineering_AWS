@@ -5,14 +5,16 @@ Description: Creates a S3 Bucket
 
 Resources:
 
-  MeuPrimeiroBucket:
+  S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketEncryption: # bucket cryptography is a optional setting, but always a good practise.
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: bucket_repo_aws_2020_10 # Must be a unique name across all AWS buckets
+      BucketName: fiorott-bucket-2020-11 # Must be a unique name across all AWS buckets
+      VersioningConfiguration:
+        Status: Enabled
 
       # For aditional bucket properties, check the documentation below:
       # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
