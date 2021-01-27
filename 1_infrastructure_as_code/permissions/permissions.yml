@@ -2,7 +2,9 @@ Description: Creates group, roles and politcys for the data engineer
 
 Resources:
 
-  IamRoleDataEngineer:
+  IamRoleDataEngineer: # Creates a role to be shared among de Data Eng. the organization. The name "IamRoleDataEngineer"
+  # can be changed by you as you need, but it is a group practise to have a minimun standart in your organization for naming
+  # the resources.
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -18,13 +20,16 @@ Resources:
         - !Ref IamPolicyDataEngineer
       RoleName: role-production-data-engineer
 
-  IamPolicyDataEngineer:
+  IamPolicyDataEngineer: # Here we have to list as policies that we want. Suppose we would like
+    # also to have access to a redshift cluster, we should the proper combination of a "Effect/Action/resource
+    # down below (for this example, we are only assigning a policy to allow acess to a S3 bucket).
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Access Policy for data engineers
       PolicyDocument:
         Version: 2012-10-17
-        Statement:
+        Statement: # Note thatwe are not specifying below any any specific s3 bucket name, it means that the users in the
+          # will be allowed to perform the "Actions" in all S3 buckets available.
           - Effect: Allow
             Action:
               - s3:GetBucketLocation
@@ -35,14 +40,15 @@ Resources:
               - arn:aws:s3:::*
 
   IamGroupDataEngineer:
-    Type: AWS::IAM::Group
+    Type: AWS::IAM::Group # Creates a Data Engineers group in order to gather common permissions related to data engineers
     Properties:
-      GroupName: iam-group-data-engineer
+      GroupName: iam-group-data-engineer #can be accesed later on on the AWS IAM panel under "Groups"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
         - !Ref IamPolicyGroupDataEngineer
 
-  IamPolicyGroupDataEngineer:
+  IamPolicyGroupDataEngineer: #What we are telling aws is: everyone associated with the group above (iam-group-data-engineer)
+    # is allowed to assume the role called "IamRoleDataEngineer" and thus the actions defined on it.
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Access Policies for the data engineers group

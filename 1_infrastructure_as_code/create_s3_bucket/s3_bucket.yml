@@ -12,7 +12,7 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: fiorott-bucket-2020-11 # Must be a unique name across all AWS buckets
+      BucketName: fiorott-bucket-2021-01 # Must be a unique name across all AWS buckets
       VersioningConfiguration:
         Status: Enabled
 
@@ -25,7 +25,7 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: fiorott-bucket-2020-11-dev # "-dev" added at the end to create a separate bucket
+      BucketName: fiorott-bucket-2021-01-dev # "-dev" added at the end to create a separate bucket
       VersioningConfiguration:
         Status: Enabled
 

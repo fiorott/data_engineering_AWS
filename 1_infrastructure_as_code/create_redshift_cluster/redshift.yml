@@ -2,26 +2,37 @@ Description: Creates a Public Redshift cluster.
 
 Resources:
 
-  RedshiftCluster:
+  MyRedshiftCluster: # only alphanumeric allowd - do not use the character "_"
     Type: AWS::Redshift::Cluster
     Properties:
-      AllowVersionUpgrade: true
-      AutomatedSnapshotRetentionPeriod: 5
-      AvailabilityZone: sa-east-1
-      ClusterIdentifier: my-redshift-cluster
-      ClusterParameterGroupName: !Ref RedshiftParameterGroup
-      ClusterSubnetGroupName: !Ref RedshiftSubnetGroup
+      AllowVersionUpgrade: true #leave is true to allow AWS to upgrade redshift for us
+      AutomatedSnapshotRetentionPeriod: 5 # how many days AWS will automatically keep the snapshot backuped for us.
+      # dependes on company policies, usually it is 30 days (there are costs associated).
+      AvailabilityZone: sa-east-1c #the AZ where the Redshift cluster will be deployed.
+      ClusterIdentifier: my-redshift-cluster #cluster name that will be showed in the dashboard
+      ClusterParameterGroupName: !Ref RedshiftParameterGroup #In Amazon Redshift, you associate a parameter group with each cluster that you create.
+      #The parameter group is a group of parameters that apply to all of the databases that you create in the cluster.
+      #These parameters configure database settings such as query timeout and datestyle.
+      # Here, we are refereing to a set of parameters that are defined later (below) in the code (see
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-redshift-clusterparametergroup.html
+      # for more info.
+      ClusterSubnetGroupName: !Ref RedshiftSubnetGroup   # This Ref indicates by code that the subnet group, which
+      #is a dependency here, must be deployed before the redshift cluster itself. If we decide to remove the cluster
+      # the opposite order takes places: first the Redshift cluster will go down, the subnet group afterwards.
+      # The parameter Cluster Security Group Could be included here, customizingthe list of security groups,
+      # but we will do it in a different way.
       VpcSecurityGroupIds:
         - !Ref RedshiftEC2SecurityGroup
       ClusterType: multi-node
       DBName: production
+      # standart port is 5439
       Encrypted: true
       MasterUsername: admin
       MasterUserPassword: Admin1234 # This is NOT the right way to do it. NEVER share passwords login data on hard code
       #templates. The good practise would be to define a variable on your CI/CD which would be the input here during the
       # execution.
       NodeType: dc2.large # https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-clusters.html
-      NumberOfNodes: 2
+      NumberOfNodes: 2 #If "ClusterType" was set as "single-node" this line must be removed.
       PubliclyAccessible: true
 
   RedshiftSubnetGroup:
@@ -30,7 +41,11 @@ Resources:
       Description: Redshift Subnet group
       SubnetIds:
         - !Ref RedshiftSubnet
-
+    # go to https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-parameter-groups.html for complete info
+    # about the parameters below. # Amazon Redshift provides one default parameter group for each parameter group family.
+    # The default parameter group has preset values for each of its parameters, and it cannot be modified.
+    #At this time, redshift-1.0 is the only version of the Amazon Redshift engine. If you want to use different parameter
+    # values than the default parameter group, you must create a custom parameter group and then associate your cluster with it.
   RedshiftParameterGroup:
     Type: AWS::Redshift::ClusterParameterGroup
     Properties:
@@ -38,9 +53,12 @@ Resources:
       ParameterGroupFamily: redshift-1.0
       Parameters:
         - ParameterName: max_concurrency_scaling_clusters
+          # Define below the maximum number os machines for the autoscaling feature. It does not increase the amount of storage
+          # which can be only performed by increasing the number of nodes.
           ParameterValue: 0
 
-  RedshiftVPC:
+  RedshiftVPC: #remeber: by default, does not have access to internet (internet gateway must be created, see parameters
+  # from "RedshiftVPCInternetGateway" to "RedshiftSubnetRouteTableAssociation"  below in this code)
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
@@ -48,9 +66,9 @@ Resources:
   RedshiftSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-east-1a
+      AvailabilityZone:  sa-east-1c # COMMON ERROR SOURCE: Check if you have listed the correct AZ here, not all az support this.
       CidrBlock: 10.0.0.0/24
-      VpcId: !Ref RedshiftVPC
+      VpcId: !Ref RedshiftVPC # Google : "cloud formation vpc" to get the right syntax (se block above  "RedshiftVPC")
 
   RedshiftEC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -63,7 +81,7 @@ Resources:
           IpProtocol: tcp
           ToPort: 5439
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
+        - CidrIp: 0.0.0.0/0   # ATENTION: This configurations means "open to all ips in the world"
           FromPort: 5439
           IpProtocol: tcp
           ToPort: 5439

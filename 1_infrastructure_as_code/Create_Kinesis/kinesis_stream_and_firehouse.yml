@@ -6,31 +6,33 @@ Resources:
     Type: AWS::Kinesis::Stream
     Properties:
       Name: kinesis-stream
-      RetentionPeriodHours: 24
-      ShardCount: 1
+      RetentionPeriodHours: 24  # numbers of hours that all data collected will be available for analisys, enabling us to
+      # tell everything that has happened in the last x hours
+      ShardCount: 1 #numbers of shards, machines that are available to run my streaming
 
-  KinesisFirehoseS3Destination:
+  KinesisFirehoseS3Destination: # Here we will create a firehouse in order to save the data stream in a S3Bucket
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
       DeliveryStreamName: kinesis-firehose-delivery-stream
       DeliveryStreamType: KinesisStreamAsSource
       KinesisStreamSourceConfiguration:
-        KinesisStreamARN: !GetAtt KinesisStream.Arn
-        RoleARN: !GetAtt KinesisRole.Arn
+        KinesisStreamARN: !GetAtt KinesisStream.Arn #Get Att means that it gell get the ID of the source of the stream
+        #that we create just above through a number (ID) provided by aws
+        RoleARN: !GetAtt KinesisRole.Arn # here we identify the role which has the permissions to perform the required actions
       S3DestinationConfiguration:
-        BucketARN: !GetAtt KinesisFirehoseBucket.Arn
-        BufferingHints:
+        BucketARN: !GetAtt KinesisFirehoseBucket.Arn # the data will be saved in a S3 bucker identified here..
+        BufferingHints: # The data will be save either on a period of each 60 seconds or when the data gets 1MB in size
           IntervalInSeconds: 60
           SizeInMBs: 1
         CloudWatchLoggingOptions:
-          Enabled: true
+          Enabled: true # Enabling logs on cloudwatch to allows us to monitor the streaming activity.
           LogGroupName: !Ref KinesisLogGroup
           LogStreamName: !Ref KinesisLogStream
-        CompressionFormat: ZIP
-        ErrorOutputPrefix: bad_record_
+        CompressionFormat: ZIP #The logs will be zipped when saving the data
+        ErrorOutputPrefix: bad_record_ # In case the data cannot be saved, it will be indicated as a "bad record"
         RoleARN: !GetAtt KinesisRole.Arn
-
-  KinesisLogGroup:
+        #Prefix: we define here the format that will be used to save  the logs
+  KinesisLogGroup: #Here we will structure the logs
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: kinesis-firehose-delivery-stream-log-group
@@ -43,13 +45,13 @@ Resources:
       LogStreamName: kinesis-firehose-delivery-stream-log-stream
 
   KinesisFirehoseBucket:
-    Type: AWS::S3::Bucket
+    Type: AWS::S3::Bucket # Here we are creating the S3 bucket that we refered to above in the "KinesisFirehoseS3Destination -> S3DestinationConfiguration"
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: kinesis-firehose-bucket-belisco
+      BucketName: kinesis-firehose-bucket-rafa-2021-jan  # >>>>>>> This name has to be changed when using this template  <<<<<<
 
   KinesisRole:
     Type: AWS::IAM::Role
@@ -59,7 +61,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: firehose.amazonaws.com
+              Service: firehose.amazonaws.com # Here We are defining that kinesis firehouse is allowed to assume
             Action:
               - sts:AssumeRole
       Description: Role to allow Kinesis to save data to S3
@@ -69,7 +71,7 @@ Resources:
       RoleName: role-kinesis
 
 
-  KinesisPolicy:
+  KinesisPolicy: # Here we are defining the actions that the firehouse under the role above will be allowed to perform
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Policy to allow kinesis to access S3
@@ -78,7 +80,7 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Action:
+            Action: #Actions allowed in the s3 bucket
               - s3:AbortMultipartUpload
               - s3:GetBucketLocation
               - s3:GetObject
@@ -86,18 +88,18 @@ Resources:
               - s3:ListBucketMultipartUploads
               - s3:PutObject
             Resource:
-              - !GetAtt KinesisFirehoseBucket.Arn
-              - !Join ["/", [!GetAtt KinesisFirehoseBucket.Arn, "*"]]
+              - !GetAtt KinesisFirehoseBucket.Arn  # Kinesis Firehouse to be used
+              - !Join ["/", [!GetAtt KinesisFirehoseBucket.Arn, "*"]] # S3 bucket allowed to be acessed indirectly through Kinesis Firehouse.
           - Effect: Allow
-            Action:
+            Action: # Actions allowed in Kinesis Firehouse
               - kinesis:DescribeStream
               - kinesis:GetShardIterator
               - kinesis:GetRecords
               - kinesis:ListShards
             Resource:
-              - !GetAtt KinesisStream.Arn
+              - !GetAtt KinesisStream.Arn  # Kinesis to be used
           - Effect: Allow
             Action:
-              - logs:PutLogEvents
+              - logs:PutLogEvents  # Actions allowed to be donby kinesis
             Resource:
-              - arn:aws:logs:*:*:*
+              - arn:aws:logs:*:*:*  # All logs allowed
